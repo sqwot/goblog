@@ -27,12 +27,46 @@ func writeHandler(rw http.ResponseWriter, r *http.Request) {
 	t.ExecuteTemplate(rw, "write", nil)
 }
 func savePostHandler(w http.ResponseWriter, r *http.Request) {
-	id := GenerateId()
+	id := r.FormValue("id")
 	title := r.FormValue("title")
 	content := r.FormValue("content")
 
-	post := models.NewPost(id, title, content)
-	posts[post.Id] = post
+	var post *models.Post
+	if id != "" {
+		post = posts[id]
+		post.Title = title
+		post.Content = content
+	} else {
+		id = GenerateId()
+		post := models.NewPost(id, title, content)
+		posts[post.Id] = post
+	}
+
+	http.Redirect(w, r, "/", 302)
+}
+
+func editHandler(rw http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("templates/write.html", "templates/header.html", "templates/footer.html")
+	if err != nil {
+		fmt.Fprintf(rw, err.Error())
+	}
+
+	id := r.FormValue("id")
+	post, found := posts[id]
+	if !found {
+		http.NotFound(rw, r)
+	}
+
+	t.ExecuteTemplate(rw, "write", post)
+}
+
+func deleteHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.FormValue("id")
+	if id == "" {
+		http.NotFound(w, r)
+	}
+
+	delete(posts, id)
 
 	http.Redirect(w, r, "/", 302)
 }
@@ -49,6 +83,8 @@ func main() {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/write", writeHandler)
+	http.HandleFunc("/edit", editHandler)
+	http.HandleFunc("/DeletePost", deleteHandler)
 	http.HandleFunc("/SavePost", savePostHandler)
 
 	http.ListenAndServe(":3000", nil)
