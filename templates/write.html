@@ -1,0 +1,28 @@
+{{define "write"}}
+{{template "header"}}
+
+<div class="row" style="margin-top: 65px;">
+    <div class="col-xs-4">
+        
+    </div>
+    <div class="col-xs-4">
+        <form role="form" method="POST" action="/SavePost">
+            <input type="hidden" name=id />
+            <div class="form-group">
+                <label for="title">Title</label>
+                <input type="text" name="title" id="title" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="content">Content</label><br />
+                <textarea name="content" id="content"></textarea>
+            </div>
+            <button type="submit" class="btn btn-default">Submit</button>
+        </form>
+    </div>
+    <div class="col-xs-4">
+        <a href="/DeletePost">Delete</a>
+    </div>
+</div>
+
+{{template "footer"}}
+{{end}}
