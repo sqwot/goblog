@@ -1,5 +1,4 @@
-{{define "write"}}
-{{template "header"}}
+
 
 <div class="row" style="margin-top: 65px;">
     <div class="col-xs-4">
@@ -21,10 +20,8 @@
     </div>
     <div class="col-xs-4"> 
         {{if .Id}}      
-            <a href="/DeletePost?id={{.Id}}">Delete</a>
+            <a href="/DeletePost/{{.Id}}">Delete</a>
         {{end}}
     </div>
 </div>
 
-{{template "footer"}}
-{{end}}
