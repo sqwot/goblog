@@ -1,37 +1,51 @@
 package main
 
 import (
+	"GoBlog/db/documents"
 	"fmt"
 	"goblog/models"
+	"html/template"
 	"net/http"
 
 	"github.com/codegangsta/martini"
 	"github.com/martini-contrib/render"
+	"gopkg.in/mgo.v2"
 )
 
-var posts map[string]*models.Post
-var counter int
+var postCollection *mgo.Collection
 
 func indexHandler(rnd render.Render) {
-	fmt.Println(counter)
+	postDocuments := []documents.postDocument{}
+	postCollection.Find(nil).All(&postDocuments)
+
+	posts := []models.Post{}
+
+	for _, doc := range postDocuments {
+		post := models.Post{doc.Id, doc.Title, doc.ContentHtml, doc.ContentMarkdown}
+		posts = append(posts, post)
+	}
+
 	rnd.HTML(200, "index", posts)
 }
 func writeHandler(rnd render.Render) {
-	rnd.HTML(200, "write", nil)
+	post := models.Post{}
+	rnd.HTML(200, "write", post)
 }
 func savePostHandler(rnd render.Render, r *http.Request) {
 	id := r.FormValue("id")
 	title := r.FormValue("title")
-	content := r.FormValue("content")
+	contentMarkdown := r.FormValue("content")
+	contentHtml := ConvertMarkdownToHtml(contentMarkdown)
 
 	var post *models.Post
 	if id != "" {
 		post = posts[id]
 		post.Title = title
-		post.Content = content
+		post.ContentHtml = contentHtml
+		post.ContentMarkdown = contentMarkdown
 	} else {
 		id = GenerateId()
-		post := models.NewPost(id, title, content)
+		post := models.NewPost(id, title, contentHtml, contentMarkdown)
 		posts[post.Id] = post
 	}
 
@@ -60,20 +74,38 @@ func deleteHandler(rnd render.Render, r *http.Request, params martini.Params) {
 	rnd.Redirect("/")
 }
 
+func getHtmlHandler(rnd render.Render, r *http.Request) {
+	md := r.FormValue("md")
+	html := ConvertMarkdownToHtml(md)
+
+	rnd.JSON(200, map[string]interface{}{"html": html})
+}
+
+func unescape(x string) interface{} {
+	return template.HTML(x)
+}
+
 func main() {
 	colorReset := "\033[0m"
 	colorGreen := "\033[32m"
 	fmt.Println(string(colorGreen), "***************BugaBlog on martini***************")
 	fmt.Println(string(colorReset), "")
 
-	posts = make(map[string]*models.Post, 0)
-	counter = 0
+	session, err := mgo.Dial("localhost")
+	if err != nil {
+		panic(err)
+	}
+	postCollection = session.DB("BugaBlog").C("posts")
+
 	m := martini.Classic()
+
+	unescapeFuncMap := template.FuncMap{"unescape": unescape}
+
 	m.Use(render.Renderer(render.Options{
 		Directory:  "templates",
 		Layout:     "layout",
 		Extensions: []string{".tmpl", ".html"},
-		//Funcs: ,
+		Funcs:      []template.FuncMap{unescapeFuncMap},
 		Charset:    "UTF-8",
 		IndentJSON: true,
 	}))
@@ -86,6 +118,7 @@ func main() {
 	m.Get("/edit/:id", editHandler)
 	m.Get("/DeletePost/:id", deleteHandler)
 	m.Post("/SavePost", savePostHandler)
+	m.Post("/getHtml", getHtmlHandler)
 
 	m.Run()
 }
