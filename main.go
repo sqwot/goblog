@@ -46,8 +46,10 @@ func main() {
 	m.Get("/", routes.IndexHandler)
 	m.Get("/write", routes.WriteHandler)
 	m.Get("/edit/:id", routes.EditHandler)
+	m.Get("/view/:id", routes.ViewHandler)
 	m.Get("/DeletePost/:id", routes.DeleteHandler)
 	m.Get("/login", routes.GetLoginHandler)
+	m.Get("/logout", routes.LogoutHandler)
 
 	m.Post("/SavePost", routes.SavePostHandler)
 	m.Post("/getHtml", routes.GetHtmlHandler)
